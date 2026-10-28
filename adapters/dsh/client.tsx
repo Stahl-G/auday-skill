@@ -38,13 +38,21 @@ function useTheme() {
   return theme;
 }
 
-function AudayPage({ request }: { request: Request }) {
-  const zh = navigator.language.startsWith('zh');
+function AudayPage({ request, loadLocale }: { request: Request; loadLocale: () => Promise<string | null> }) {
+  const embedded = new URLSearchParams(window.location.hash.slice(1)).get('kaitu-embed') === '1';
+  const [language, setLanguage] = useState<'zh' | 'en'>(embedded || navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en');
+  const [languageChosen, setLanguageChosen] = useState(false);
+  useEffect(() => {
+    let active = true;
+    if (!languageChosen) void loadLocale().then(locale => { if (active && locale) setLanguage(locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'); }).catch(() => {});
+    return () => { active = false; };
+  }, [loadLocale, languageChosen]);
+  const zh = language === 'zh';
   const t = zh ? labels.zh : labels.en;
   const theme = useTheme();
-  const embedded = new URLSearchParams(window.location.hash.slice(1)).get('kaitu-embed') === '1';
   const [busy, setBusy] = useState(false), [message, setMessage] = useState('');
   const [failed, setFailed] = useState(false);
+  const [retryPair, setRetryPair] = useState(false);
   const [services, setServices] = useState<string[]>([]), [service, setService] = useState('');
   const [page, setPage] = useState<any>({ records: [] }), [offset, setOffset] = useState(0);
   const [ids, setIds] = useState<string[]>([]), [preview, setPreview] = useState<any>(null);
@@ -92,14 +100,15 @@ function AudayPage({ request }: { request: Request }) {
       }
       else if (operation === 'preview') setPreview(result);
       else if (operation === 'import') { setMessage(t.sent); setPreview(null); setIds([]); }
-      else if (operation === 'pair') setMessage(t.connected);
+      else if (operation === 'pair') { setRetryPair(false); setMessage(t.connected); }
       else if (operation === 'sync') setMessage(t.synced);
-    } catch (error) { setFailed(true); setMessage(errorText(error)); }
+    } catch (error) { if (operation === 'pair') setRetryPair(true); setFailed(true); setMessage(errorText(error)); }
     finally { setBusy(false); }
   };
   return <section className="auday" data-theme={theme} aria-label={t.title} aria-busy={busy}>
     <style>{styles}</style>
     {!embedded && <header className="auday-intro"><h1>{t.title}</h1></header>}
+    <label>{zh ? '语言' : 'Language'} <select aria-label={zh ? '语言' : 'Language'} value={language} onChange={e => { setLanguageChosen(true); setLanguage(e.target.value === 'zh' ? 'zh' : 'en'); setMessage(''); }}><option value="zh">中文</option><option value="en">English</option></select></label>
     <section className="auday-card" aria-label={t.connection}>
       <h2>{t.connection}</h2>
       <div className="auday-row">
@@ -108,7 +117,7 @@ function AudayPage({ request }: { request: Request }) {
         {services.length > 0 && <><select aria-label={t.discover} value={service} disabled={busy} onChange={e => setService(e.target.value)}>
           {services.map(value => <option key={value}>{value}</option>)}
         </select>
-        <button disabled={busy || !service} onClick={() => run('pair', { service })}>{t.pair}</button></>}
+        <button disabled={busy || !service} onClick={() => run('pair', { service })}>{retryPair ? (zh ? '重新输入密码并连接' : 'Retry connection and enter password') : t.pair}</button></>}
       </div>
       <div className="auday-row">
         <button className={!ids.length ? 'auday-primary' : ''} disabled={busy} onClick={() => { setPreview(null); void run('sync'); }}>{t.sync}</button>
@@ -150,7 +159,13 @@ export async function apply(ctx: Context) {
       if (!result.ok) throw new Error(result.error.message);
       return JSON.parse(result.value);
     };
-    ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'kaitu-auday', inject: () => ({ request }) }, AudayPage));
+    const loadLocale = async () => {
+      const kaitu = (ctx.remote as any).kaitu;
+      if (!kaitu?.preferences) return null;
+      const result = await kaitu.preferences(navigator.languages?.[0] ?? navigator.language);
+      return result.ok ? result.value.locale : null;
+    };
+    ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'kaitu-auday', inject: () => ({ request, loadLocale }) }, AudayPage));
     ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'kaitu-auday', order: 27, label: () => 'Auday' }, () => <span>A</span>));
   } });
 }

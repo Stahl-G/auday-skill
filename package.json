@@ -72,7 +72,7 @@
   },
   "scripts": {
     "build": "node tools/build-dsh.mjs",
-    "test": "node --test tests/dsh-runner.test.mjs tests/dsh-client.test.mjs",
+    "test": "node --test tests/dsh-runner.test.mjs tests/dsh-client.test.mjs tests/dsh-interaction.test.mjs",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.client.json"
   },
   "peerDependencies": {
