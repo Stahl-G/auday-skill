@@ -12,3 +12,5 @@ This repository distributes the Auday desktop skill. Keep every commit suitable 
 - Public repository and collaboration text is English. Respond to users in their preferred language.
 - Keep source validation, simulator checks, physical-device testing, and published app support as separate claims.
 - Do not publish a release or change repository visibility without explicit authorization.
+
+- Avoid unnecessary secondary labels and descriptions. Let the layout do the explaining.
