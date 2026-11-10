@@ -92,7 +92,8 @@
     "esbuild": "0.28.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@deepseek-ai/dsh-client-locale": "0.2.2-rc.1"
   },
   "packageManager": "pnpm@11.22.0",
   "engines": {

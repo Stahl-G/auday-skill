@@ -1,3 +1,4 @@
+import type {} from '@deepseek-ai/dsh-client-locale/client';
 import React, { useEffect, useState } from 'react';
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-api-remotes/client';
@@ -38,15 +39,17 @@ function useTheme() {
   return theme;
 }
 
-function AudayPage({ request, loadLocale }: { request: Request; loadLocale: () => Promise<string | null> }) {
+function AudayPage({ request, loadLocale, subscribeLocale }: { request: Request; loadLocale: () => Promise<string | null>; subscribeLocale: (notify: () => void) => () => void }) {
   const embedded = new URLSearchParams(window.location.hash.slice(1)).get('kaitu-embed') === '1';
   const [language, setLanguage] = useState<'zh' | 'en'>(embedded || navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en');
   const [languageChosen, setLanguageChosen] = useState(false);
   useEffect(() => {
     let active = true;
-    if (!languageChosen) void loadLocale().then(locale => { if (active && locale) setLanguage(locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'); }).catch(() => {});
-    return () => { active = false; };
-  }, [loadLocale, languageChosen]);
+    const update = () => { if (!languageChosen) void loadLocale().then(locale => { if (active && locale) setLanguage(locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'); }).catch(() => {}); };
+    update();
+    const unsubscribe = subscribeLocale(update);
+    return () => { active = false; unsubscribe(); };
+  }, [loadLocale, subscribeLocale, languageChosen]);
   const zh = language === 'zh';
   const t = zh ? labels.zh : labels.en;
   const theme = useTheme();
@@ -161,11 +164,15 @@ export async function apply(ctx: Context) {
     };
     const loadLocale = async () => {
       const kaitu = (ctx.remote as any).kaitu;
-      if (!kaitu?.preferences) return null;
-      const result = await kaitu.preferences(navigator.languages?.[0] ?? navigator.language);
-      return result.ok ? result.value.locale : null;
+      if (kaitu?.preferences) {
+        const result = await kaitu.preferences(navigator.languages?.[0] ?? navigator.language);
+        if (result.ok) return result.value.locale;
+      }
+      if (new URLSearchParams(window.location.hash.slice(1)).get('kaitu-embed') === '1') return null;
+      return ctx.get('locale')?.getSnapshot().active ?? null;
     };
-    ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'kaitu-auday', inject: () => ({ request, loadLocale }) }, AudayPage));
+    const subscribeLocale = (notify: () => void) => ctx.get('locale')?.subscribe(notify) ?? (() => {});
+    ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'kaitu-auday', inject: () => ({ request, loadLocale, subscribeLocale }) }, AudayPage));
     ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'kaitu-auday', order: 27, label: () => 'Auday' }, () => <span>A</span>));
   } });
 }
