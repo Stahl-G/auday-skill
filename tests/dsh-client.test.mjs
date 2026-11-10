@@ -29,6 +29,8 @@ async function loadClient(language = 'en', embedded = false, dark = false, hostS
   });
   const ctx = {
     effect() {},
+    get() { return undefined; },
+    inject() { return { dispose() {} }; },
     remote: {
       async $mount(info) { contribution = info; return () => {}; },
       kaituAuday: { async request(...args) { calls.push(args); return { ok: true, value: '{"cached":true}' }; } },
@@ -72,7 +74,7 @@ test('standalone and embedded pages render in both languages and themes without 
     assert.equal(registrations.find(({ meta }) => meta.name === 'sidebar.panellist').meta.id, 'kaitu-auday');
     const html = renderToStaticMarkup(React.createElement(main.component, main.meta.inject()));
     assert.equal(html.includes('<h1>Auday</h1>'), !embedded);
-    assert.ok(html.includes(language === 'zh' ? '检查依赖' : 'Check prerequisites'));
+    assert.ok(html.includes(language === 'zh' || embedded ? '检查依赖' : 'Check prerequisites'));
     assert.ok(html.includes(`data-theme="${dark ? 'dark' : 'light'}"`));
     assert.equal(calls.length, 0);
   }

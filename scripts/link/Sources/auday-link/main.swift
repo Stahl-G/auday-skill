@@ -38,7 +38,7 @@ func dialogPassword() throws -> String {
         : "Enter the Auday communication password. After connection, save it in this Mac's Keychain for manual read-only sync."
     let cancel = chinese ? "取消" : "Cancel"
     let connect = chinese ? "连接" : "Connect"
-    let script = NSAppleScript(source: "text returned of (display dialog \"\(prompt)\" default answer \"\" with hidden answer buttons {\"\(cancel)\", \"\(connect)\"} default button \"\(connect)\")")
+    let script = NSAppleScript(source: "text returned of (display dialog \"\(prompt)\" default answer \"\" with hidden answer buttons {\"\(cancel)\", \"\(connect)\"} default button \"\(connect)\" cancel button \"\(cancel)\")")
     var error: NSDictionary?
     guard let result = script?.executeAndReturnError(&error), error == nil,
           let password = result.stringValue else {
