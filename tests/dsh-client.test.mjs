@@ -30,6 +30,7 @@ async function loadClient(language = 'en', embedded = false, dark = false, hostS
   const ctx = {
     effect() {},
     get() { return undefined; },
+    inject() { return { dispose() {} }; },
     remote: {
       async $mount(info) { contribution = info; return () => {}; },
       kaituAuday: { async request(...args) { calls.push(args); return { ok: true, value: '{"cached":true}' }; } },

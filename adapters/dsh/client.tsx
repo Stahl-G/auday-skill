@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-api-remotes/client';
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client';
+import type {} from '@deepseek-ai/dsh-client-ui-layout/client';
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client';
 import contribution from '../../lib/typert.remote-client.js';
 import styles from './client.css';
@@ -45,7 +46,7 @@ function AudayPage({ request, loadLocale, subscribeLocale }: { request: Request;
   const [languageChosen, setLanguageChosen] = useState(false);
   useEffect(() => {
     let active = true;
-    const update = () => { if (!languageChosen) void loadLocale().then(locale => { if (active && locale) setLanguage(locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'); }).catch(() => {}); };
+    const update = () => { if (active && !languageChosen) void loadLocale().then(locale => { if (active && locale) setLanguage(locale.toLowerCase().startsWith('zh') ? 'zh' : 'en'); }).catch(() => {}); };
     update();
     const unsubscribe = subscribeLocale(update);
     return () => { active = false; unsubscribe(); };
@@ -163,7 +164,7 @@ export async function apply(ctx: Context) {
       return JSON.parse(result.value);
     };
     const loadLocale = async () => {
-      const kaitu = (ctx.remote as any).kaitu;
+      const kaitu = ctx.get('remote.kaitu') as { preferences(hint?: string): Promise<{ ok: boolean; value: { locale: string | null } }> } | undefined;
       if (kaitu?.preferences) {
         const result = await kaitu.preferences(navigator.languages?.[0] ?? navigator.language);
         if (result.ok) return result.value.locale;
@@ -171,7 +172,18 @@ export async function apply(ctx: Context) {
       if (new URLSearchParams(window.location.hash.slice(1)).get('kaitu-embed') === '1') return null;
       return ctx.get('locale')?.getSnapshot().active ?? null;
     };
-    const subscribeLocale = (notify: () => void) => ctx.get('locale')?.subscribe(notify) ?? (() => {});
+    const subscribeLocale = (notify: () => void) => {
+      const stopLocale = ctx.get('locale')?.subscribe(notify);
+      const layout = ctx.get('layout');
+      const stopPanel = layout?.panelInfo.subscribe(() => {
+        if (layout.panelInfo.getSnapshot().activePanelId === 'kaitu-auday') notify();
+      });
+      const kaitu = ctx.inject(['remote.kaitu'], (scope) => {
+        notify();
+        scope.effect(() => () => notify());
+      });
+      return () => { stopLocale?.(); stopPanel?.(); void kaitu.dispose(); };
+    };
     ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'kaitu-auday', inject: () => ({ request, loadLocale, subscribeLocale }) }, AudayPage));
     ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'kaitu-auday', order: 27, label: () => 'Auday' }, () => <span>A</span>));
   } });
