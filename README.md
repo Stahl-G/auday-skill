@@ -26,7 +26,7 @@ This repository provides **Auday’s desktop companion skill**. It brings the co
 
 ## Install through your desktop agent
 
-For the optional DSH 0.2.1-rc.3 / Kaitu adapter, see
+For the optional DSH 0.2.2-rc.1 / Kaitu adapter, see
 [host installation](references/hosts.md).
 
 Open a desktop agent that supports local skills and send:

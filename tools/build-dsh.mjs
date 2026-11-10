@@ -86,7 +86,7 @@ try {
 }
 
 await build({ entryPoints: ["adapters/dsh/service.ts"], outfile: "dist/index.js", bundle: true,
-  platform: "node", target: "node22", format: "esm",
+  platform: "node", target: "node24.9", format: "esm",
   external: ["@deepseek-ai/cordis", "@deepseek-ai/dsh-typert-protocol"], legalComments: "eof" });
 await build({ entryPoints: ["adapters/dsh/client.tsx"], outfile: "dist/client.js", bundle: true,
   plugins: [{ name: "client-zod", setup(build) {

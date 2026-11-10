@@ -12,7 +12,7 @@ through the host's skill importer or supported local skill directory:
 
 ## DSH / Kaitu
 
-The adapter targets DSH **0.2.1-rc.3** and requires macOS, existing Python 3,
+The adapter targets DSH **0.2.2-rc.1** and requires Node 24.9+, macOS, existing Python 3,
 and Xcode Command Line Tools with Swift 5.9 or later. Windows can load the page;
 connection, cached browsing and import require macOS. The Swift helper builds
 from the installed sources on the first live connection. The adapter does not
